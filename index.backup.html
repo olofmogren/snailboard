@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAMLE Lab Snailboard</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+	    background-color: #eee;
+        }
+        canvas {
+            border: 0px solid black;
+	    background-color: #fff;
+	    /*width: 100vh;
+	    height: 100vh;*/
+	    position: absolute;
+	    left: 0;
+	    top: 0;
+	    width: 100%;
+	    height: 100%;
+	    display: block;
+        }
+	.container {
+            aspect-ratio: 1 / 1;
+            max-width: 100vh;
+            max-height: 100vh;
+
+            width: 100vw;
+	    height: 100vw;
+	    border: 0;
+	    position: relative;
+	}
+        .icon {
+            position: absolute;
+        }
+        #snail { left: 10px; bottom: 50%; }
+        #lightning { right: 10px; bottom: 50%; }
+        #island { left: 50%; bottom: 10px; }
+        #scream { left: 50%; top: 10px; }
+    </style>
+</head>
+<body>
+	<div class="container">
+            <canvas id="snailMap"></canvas>
+            <img id="snail" class="icon" src="snail.png" width="48" height="48" alt="Snail">
+            <img id="lightning" class="icon" src="lightning.png" width="48" height="48" alt="Lightning Bolt">
+            <img id="island" class="icon" src="island.png" width="48" height="48" alt="Island">
+            <img id="scream" class="icon" src="scream.png" width="48" height="48" alt="The Scream">
+	</div>
+    <script>
+        let canvas = document.getElementById('snailMap');
+        let ctx = canvas.getContext('2d');
+        let currentX = null;
+
+        let currentY = null;
+        let historicalCoordinates = [];
+        //let userColors = {};
+        //if (!userColors[name[0]]) {
+        //  userColors[name[0]] = '#' + Math.floor(Math.random()*16777215).toString(16);
+        //}
+        const validUsernames = ["olof", "john", "edvin", "aleksis", "maria", "martin"];
+
+        const alphabet = Array.from({ length: 26 }, (_, i) => String.fromCharCode(97 + i));
+        const colors = [
+		    "#FF5733", "#33FF57", "#3357FF", "#FF33A1", "#A133FF", "#33FFF5", 
+		    "#F5FF33", "#FF8C33", "#8C33FF", "#33FF8C", "#FF3333", "#33FF33", 
+		    "#3333FF", "#FF33FF", "#33FFFF", "#FFFF33", "#FF5733", "#33FF57", 
+		    "#3357FF", "#FF33A1", "#A133FF", "#33FFF5", "#F5FF33", "#FF8C33", 
+		    "#8C33FF", "#33FF8C"
+		];
+        const alphabetColors = {};
+        alphabet.forEach((letter, index) => {
+          alphabetColors[letter] = colors[index];
+        });
+
+        function checkUsername(userName) {
+	    return validUsernames.includes(userName.toLowerCase());
+        }
+
+        let userName = prompt("Please enter your name:");
+        //let userName = "Olof"
+
+        while (!checkUsername(userName)){
+            userName = prompt("Name not found. Please enter a valid name:");
+        }
+
+        //normalize usernames so that they have capital first letter.
+        userName = userName[0].toUpperCase()+userName.substring(1).toLowerCase();
+
+        function drawCoordinateSystem() {
+            let canvas_width = canvas.width/window.devicePixelRatio; //canvas.width/height is not css pixels, but physical pixels on firefox and chrome
+            let canvas_height = canvas.height/window.devicePixelRatio; //canvas.width/height is not css pixels, but physical pixels on firefox and chrome
+            ctx.clearRect(0, 0, canvas_width, canvas_height);
+            ctx.beginPath();
+	    //console.log(0, canvas.height / 2);
+            ctx.moveTo(0, canvas_height / 2);
+            //console.log(canvas_width, canvas_height / 2);
+            ctx.lineTo(canvas_width, canvas_height / 2);
+            //console.log(canvas_width / 2, 0);
+            ctx.moveTo(canvas_width / 2, 0);
+            //console.log(canvas_width / 2, canvas_height);
+            ctx.lineTo(canvas_width / 2, canvas_height);
+            ctx.stroke();
+        }
+
+        function fetchHistoricalCoordinates() {
+            //console.log("fetchHistoricalCoordinates()");
+            fetch('https://toad.se/snailboard/history.csv')
+                .then(response => response.text())
+                .then(data => {
+                    let lines = data.split('\n');
+                    lines.forEach(line => {
+                        let tuple = line.split(',');
+                        if (tuple.length == 4) {
+			    historicalCoordinates.push(tuple);
+                        }
+                    });
+                    console.log(historicalCoordinates);
+                    historicalCoordinates = getRecentHistoricalCoordinates();
+                    console.log(historicalCoordinates);
+		    plotHistoricalCoordinates();
+                });
+        }
+        function getRecentHistoricalCoordinates(){
+            // Step 1: Sort the array by date in descending order
+            historicalCoordinates.sort((a, b) => new Date(b[0]) - new Date(a[0]));
+
+            // Step 2: Filter the array to retain only the tuple with the highest date for each name, plus the current date, if it exists
+            const recentCoordinates = [];
+            const seenNames = new Set();
+
+            for (const tuple of historicalCoordinates) {
+                const name = tuple[1];
+                const d = tuple[0];
+		
+		if (isToday(d)){
+                    recentCoordinates.push(tuple);
+		}
+                else if (!seenNames.has(name)) {
+                    recentCoordinates.push(tuple);
+                    seenNames.add(name);
+                }
+            }
+            return recentCoordinates;		       
+	}
+        function isToday(date) {
+	    const d = new Date(date);
+            const today = new Date();
+            return d.getDate() === today.getDate() &&
+                d.getMonth() === today.getMonth() &&
+                d.getFullYear() === today.getFullYear();
+        }
+
+        function plotCharacter(name){
+            if (name == "Maria"){
+                return "B";
+            }
+            else if (name == "Martin"){
+                return "W";
+            }
+            else{
+                return name[0];
+            }
+	}
+
+        function plotHistoricalCoordinates() {
+		//console.log("plotHistoricalCoordinates()");
+		//console.log(historicalCoordinates.length);
+		historicalCoordinates.forEach(tuple => {
+		    //console.log(tuple);
+                    let [csvDate, csvName, x, y] = tuple;
+		    let canvas_width = canvas.width/window.devicePixelRatio; //canvas.width/height is not css pixels, but physical pixels on firefox and chrome
+		    let canvas_height = canvas.height/window.devicePixelRatio; //canvas.width/height is not css pixels, but physical pixels on firefox and chrome
+                    let canvasX = (parseFloat(x) + 1) * canvas_width / 2;
+                    let canvasY = (1 - parseFloat(y)) * canvas_height / 2;
+                    color = alphabetColors[csvName[0].toLowerCase()];
+                    console.log(`Plotting ${csvName} at (${x} -> ${canvasX}, ${y} -> ${canvasY}) with color ${color}`);
+                    ctx.fillStyle = color;
+                    ctx.font = '20px Arial';
+                    ctx.fillText(plotCharacter(csvName), canvasX, canvasY);
+                    ctx.font = '10px Arial';
+                    ctx.fillText(csvDate, canvasX + 5, canvasY + 5);
+            });
+        }
+
+        canvas.addEventListener('click', function(event) {
+            let rect = canvas.getBoundingClientRect();
+            console.log("canvas bounding client rect",rect);
+            console.log("event x,y:", event.clientX, event.clientY);
+            let canvas_width = canvas.width/window.devicePixelRatio; //canvas.width/height is not css pixels, but physical pixels on firefox and chrome
+            let canvas_height = canvas.height/window.devicePixelRatio; //canvas.width/height is not css pixels, but physical pixels on firefox and chrome
+            console.log("canvas width, height:", canvas.width, canvas.height);
+            let x = event.clientX - rect.left;
+            let y = event.clientY - rect.top;
+            currentX = (x / canvas_width) * 2 - 1;
+            currentY = 1 - (y / canvas_height) * 2;
+            drawCoordinateSystem();
+            plotHistoricalCoordinates();
+            //ctx.fillStyle = 'black';
+            color = alphabetColors[userName[0].toLowerCase()];
+            ctx.fillStyle = color;
+            ctx.font = '20px Arial';
+            console.log(`Plotting ${userName} at (${currentX} -> ${x}, ${currentY} -> ${y}) with color ${color}`);
+            ctx.fillText(plotCharacter(userName), x, y);
+            ctx.font = '10px Arial';
+            ctx.fillText("NOW", x + 5, y + 5);
+            currentX = currentX.toFixed(3);
+            currentY = currentY.toFixed(3);
+            console.log(`https://toad.se/snailboard/backend.php?name=${userName}&x=${currentX}&y=${currentY}`);
+            fetch(`https://toad.se/snailboard/backend.php?name=${userName}&x=${currentX}&y=${currentY}`);
+        });
+
+        drawCoordinateSystem();
+        fetchHistoricalCoordinates();
+
+        function resizeCanvas() {
+            const canvas = document.getElementById('snailMap');
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth * window.devicePixelRatio;
+            console.log("device pixel ratio", window.devicePixelRatio);
+            canvas.height = container.clientHeight * window.devicePixelRatio;
+            console.log("canvas width, height:", canvas.width, canvas.height);
+            canvas.style.width = container.clientWidth + 'px';
+            canvas.style.height = container.clientHeight + 'px';
+            const ctx = canvas.getContext('2d');
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+
+        function resizeHandler() {
+            resizeCanvas();
+            drawCoordinateSystem();
+            plotHistoricalCoordinates();
+	}
+
+        window.addEventListener('resize', resizeHandler);
+        window.addEventListener('load', resizeHandler);
+
+    </script>
+</body>
+</html>
+

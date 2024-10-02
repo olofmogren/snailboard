@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snail Map</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+        .symbol {
+            position: absolute;
+            font-size: 24px;
+        }
+        #snail { left: 10px; top: 50%; transform: translateY(-50%); }
+        #lightning { right: 10px; top: 50%; transform: translateY(-50%); }
+        #island { left: 50%; bottom: 10px; transform: translateX(-50%); }
+        #scream { left: 50%; top: 10px; transform: translateX(-50%); }
+    </style>
+</head>
+<body>
+    <canvas id="snailMap" width="500" height="500"></canvas>
+    <div id="snail" class="symbol">🐌</div>
+    <div id="lightning" class="symbol">⚡</div>
+    <div id="island" class="symbol">🏝️</div>
+    <div id="scream" class="symbol">🖼️</div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('snailMap');
+            const ctx = canvas.getContext('2d');
+            const name = prompt("Please enter your name:");
+
+            // Draw coordinate system
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height / 2);
+            ctx.lineTo(canvas.width, canvas.height / 2);
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.strokeStyle = 'black';
+            ctx.stroke();
+
+            canvas.addEventListener('click', (event) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = event.clientX - rect.left;
+                const y = event.clientY - rect.top;
+
+                // Convert to coordinate system range -1 to 1
+                const xCoord = (x / canvas.width) * 2 - 1;
+                const yCoord = 1 - (y / canvas.height) * 2;
+
+                // Draw thick X
+                ctx.beginPath();
+                ctx.moveTo(x - 5, y - 5);
+                ctx.lineTo(x + 5, y + 5);
+                ctx.moveTo(x + 5, y - 5);
+                ctx.lineTo(x - 5, y + 5);
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = 'red';
+                ctx.stroke();
+
+                // Send coordinates to backend API
+                const url = `http://toad.se/snailmap.php?name=${encodeURIComponent(name)}&x=${xCoord.toFixed(2)}&y=${yCoord.toFixed(2)}`;
+                fetch(url)
+                    .then(response => response.text())
+                    .then(data => console.log(data))
+                    .catch(error => console.error('Error:', error));
+            });
+        });
+    </script>
+</body>
+</html>
+
