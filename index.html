@@ -118,13 +118,13 @@
                     lines.forEach(line => {
                         let tuple = line.split(',');
                         if (tuple.length == 4) {
-                historicalCoordinates.push(tuple);
+                            historicalCoordinates.push(tuple);
                         }
                     });
                     console.log(historicalCoordinates);
                     historicalCoordinates = getRecentHistoricalCoordinates();
                     console.log(historicalCoordinates);
-            plotHistoricalCoordinates();
+                    plotHistoricalCoordinates();
                 });
         }
         function getRecentHistoricalCoordinates(){
@@ -139,9 +139,9 @@
                 const name = tuple[1];
                 const d = tuple[0];
         
-            if (isToday(d)){
-                recentCoordinates.push(tuple);
-            }
+                if (isToday(d)){
+                    recentCoordinates.push(tuple);
+                }
                 else if (!seenNames.has(name)) {
                     recentCoordinates.push(tuple);
                     seenNames.add(name);
