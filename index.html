@@ -109,9 +109,11 @@
             ctx.stroke();
         }
 
-        function fetchHistoricalCoordinates() {
+        function fetchHistoricalCoordinates(drawCoordinateSys) {
             //console.log("fetchHistoricalCoordinates()");
-            fetch('https://toad.se/snailboard/history.csv')
+            historicalCoordinates = [];
+		console.log(historicalCoordinates);
+            fetch('https://toad.se/snailboard/history.csv', {cache: "reload"})
                 .then(response => response.text())
                 .then(data => {
                     let lines = data.split('\n');
@@ -121,9 +123,12 @@
                             historicalCoordinates.push(tuple);
                         }
                     });
-                    console.log(historicalCoordinates);
+		console.log(historicalCoordinates);
                     historicalCoordinates = getRecentHistoricalCoordinates();
-                    console.log(historicalCoordinates);
+		console.log(historicalCoordinates);
+                    if (drawCoordinateSys){
+                        drawCoordinateSystem();
+                    }
                     plotHistoricalCoordinates();
                 });
         }
@@ -185,6 +190,9 @@
                 ctx.font = '20px Arial';
                 ctx.fillText(plotCharacter(csvName), canvasX, canvasY);
                 ctx.font = '10px Arial';
+                if (isToday(csvDate)){
+                    csvDate = "TODAY";
+                }
                 ctx.fillText(csvDate, canvasX + 5, canvasY + 5);
             });
         }
@@ -209,7 +217,7 @@
             console.log(`Plotting ${userName} at (${currentX} -> ${x}, ${currentY} -> ${y}) with color ${color}`);
             ctx.fillText(plotCharacter(userName), x, y);
             ctx.font = '10px Arial';
-            ctx.fillText("NOW", x + 5, y + 5);
+            ctx.fillText("TODAY", x + 5, y + 5);
             currentX = currentX.toFixed(3);
             currentY = currentY.toFixed(3);
             console.log(`https://toad.se/snailboard/backend.php?name=${userName}&x=${currentX}&y=${currentY}`);
@@ -217,7 +225,7 @@
         });
 
         drawCoordinateSystem();
-        fetchHistoricalCoordinates();
+        fetchHistoricalCoordinates(false);
 
         function resizeCanvas() {
             const canvas = document.getElementById('snailMap');
@@ -240,6 +248,11 @@
 
         window.addEventListener('resize', resizeHandler);
         window.addEventListener('load', resizeHandler);
+
+        function checkForChanges(){
+            fetchHistoricalCoordinates(true);
+	}
+        setInterval(checkForChanges, 2500);
 
     </script>
 </body>

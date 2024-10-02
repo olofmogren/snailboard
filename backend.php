@@ -24,7 +24,7 @@ if (isset($_GET['name']) && isset($_GET['x']) && isset($_GET['y'])) {
         $lines[] = $newLine;
     }
 			        
-    file_put_contents($file, implode("\n", $lines) . "\n");
+    file_put_contents($file, trim(implode("\n", $lines)) . "\n");
 			        
     echo "Data processed successfully!";
 } else {
