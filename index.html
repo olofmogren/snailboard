@@ -12,30 +12,30 @@
             justify-content: center;
             height: 100vh;
             margin: 0;
-	    background-color: #eee;
+            background-color: #eee;
         }
         canvas {
             border: 0px solid black;
-	    background-color: #fff;
-	    /*width: 100vh;
-	    height: 100vh;*/
-	    position: absolute;
-	    left: 0;
-	    top: 0;
-	    width: 100%;
-	    height: 100%;
-	    display: block;
+            background-color: #fff;
+            /*width: 100vh;
+            height: 100vh;*/
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
         }
-	.container {
+       .container {
             aspect-ratio: 1 / 1;
             max-width: 100vh;
             max-height: 100vh;
 
             width: 100vw;
-	    height: 100vw;
-	    border: 0;
-	    position: relative;
-	}
+            height: 100vw;
+            border: 0;
+            position: relative;
+        }
         .icon {
             position: absolute;
         }
@@ -46,13 +46,13 @@
     </style>
 </head>
 <body>
-	<div class="container">
+    <div class="container">
             <canvas id="snailMap"></canvas>
             <img id="snail" class="icon" src="snail.png" width="48" height="48" alt="Snail">
             <img id="lightning" class="icon" src="lightning.png" width="48" height="48" alt="Lightning Bolt">
             <img id="island" class="icon" src="island.png" width="48" height="48" alt="Island">
             <img id="scream" class="icon" src="scream.png" width="48" height="48" alt="The Scream">
-	</div>
+    </div>
     <script>
         let canvas = document.getElementById('snailMap');
         let ctx = canvas.getContext('2d');
@@ -68,19 +68,19 @@
 
         const alphabet = Array.from({ length: 26 }, (_, i) => String.fromCharCode(97 + i));
         const colors = [
-		    "#FF5733", "#33FF57", "#3357FF", "#FF33A1", "#A133FF", "#33FFF5", 
-		    "#F5FF33", "#FF8C33", "#8C33FF", "#33FF8C", "#FF3333", "#33FF33", 
-		    "#3333FF", "#FF33FF", "#33FFFF", "#FFFF33", "#FF5733", "#33FF57", 
-		    "#3357FF", "#FF33A1", "#A133FF", "#33FFF5", "#F5FF33", "#FF8C33", 
-		    "#8C33FF", "#33FF8C"
-		];
+            "#FF5733", "#33FF57", "#3357FF", "#FF33A1", "#A133FF", "#33FFF5", 
+            "#F5FF33", "#FF8C33", "#8C33FF", "#33FF8C", "#FF3333", "#33FF33", 
+            "#3333FF", "#FF33FF", "#33FFFF", "#FFFF33", "#FF5733", "#33FF57", 
+            "#3357FF", "#FF33A1", "#A133FF", "#33FFF5", "#F5FF33", "#FF8C33", 
+            "#8C33FF", "#33FF8C"
+        ];
         const alphabetColors = {};
         alphabet.forEach((letter, index) => {
           alphabetColors[letter] = colors[index];
         });
 
         function checkUsername(userName) {
-	    return validUsernames.includes(userName.toLowerCase());
+        return validUsernames.includes(userName.toLowerCase());
         }
 
         let userName = prompt("Please enter your name:");
@@ -98,7 +98,7 @@
             let canvas_height = canvas.height/window.devicePixelRatio; //canvas.width/height is not css pixels, but physical pixels on firefox and chrome
             ctx.clearRect(0, 0, canvas_width, canvas_height);
             ctx.beginPath();
-	    //console.log(0, canvas.height / 2);
+        //console.log(0, canvas.height / 2);
             ctx.moveTo(0, canvas_height / 2);
             //console.log(canvas_width, canvas_height / 2);
             ctx.lineTo(canvas_width, canvas_height / 2);
@@ -118,13 +118,13 @@
                     lines.forEach(line => {
                         let tuple = line.split(',');
                         if (tuple.length == 4) {
-			    historicalCoordinates.push(tuple);
+                historicalCoordinates.push(tuple);
                         }
                     });
                     console.log(historicalCoordinates);
                     historicalCoordinates = getRecentHistoricalCoordinates();
                     console.log(historicalCoordinates);
-		    plotHistoricalCoordinates();
+            plotHistoricalCoordinates();
                 });
         }
         function getRecentHistoricalCoordinates(){
@@ -138,19 +138,19 @@
             for (const tuple of historicalCoordinates) {
                 const name = tuple[1];
                 const d = tuple[0];
-		
-		if (isToday(d)){
-                    recentCoordinates.push(tuple);
-		}
+        
+            if (isToday(d)){
+                recentCoordinates.push(tuple);
+            }
                 else if (!seenNames.has(name)) {
                     recentCoordinates.push(tuple);
                     seenNames.add(name);
                 }
             }
-            return recentCoordinates;		       
-	}
+            return recentCoordinates;               
+        }
         function isToday(date) {
-	    const d = new Date(date);
+        const d = new Date(date);
             const today = new Date();
             return d.getDate() === today.getDate() &&
                 d.getMonth() === today.getMonth() &&
@@ -167,25 +167,25 @@
             else{
                 return name[0];
             }
-	}
+        }
 
         function plotHistoricalCoordinates() {
-		//console.log("plotHistoricalCoordinates()");
-		//console.log(historicalCoordinates.length);
-		historicalCoordinates.forEach(tuple => {
-		    //console.log(tuple);
-                    let [csvDate, csvName, x, y] = tuple;
-		    let canvas_width = canvas.width/window.devicePixelRatio; //canvas.width/height is not css pixels, but physical pixels on firefox and chrome
-		    let canvas_height = canvas.height/window.devicePixelRatio; //canvas.width/height is not css pixels, but physical pixels on firefox and chrome
-                    let canvasX = (parseFloat(x) + 1) * canvas_width / 2;
-                    let canvasY = (1 - parseFloat(y)) * canvas_height / 2;
-                    color = alphabetColors[csvName[0].toLowerCase()];
-                    console.log(`Plotting ${csvName} at (${x} -> ${canvasX}, ${y} -> ${canvasY}) with color ${color}`);
-                    ctx.fillStyle = color;
-                    ctx.font = '20px Arial';
-                    ctx.fillText(plotCharacter(csvName), canvasX, canvasY);
-                    ctx.font = '10px Arial';
-                    ctx.fillText(csvDate, canvasX + 5, canvasY + 5);
+            //console.log("plotHistoricalCoordinates()");
+            //console.log(historicalCoordinates.length);
+            historicalCoordinates.forEach(tuple => {
+                //console.log(tuple);
+                let [csvDate, csvName, x, y] = tuple;
+                let canvas_width = canvas.width/window.devicePixelRatio; //canvas.width/height is not css pixels, but physical pixels on firefox and chrome
+                let canvas_height = canvas.height/window.devicePixelRatio; //canvas.width/height is not css pixels, but physical pixels on firefox and chrome
+                let canvasX = (parseFloat(x) + 1) * canvas_width / 2;
+                let canvasY = (1 - parseFloat(y)) * canvas_height / 2;
+                color = alphabetColors[csvName[0].toLowerCase()];
+                console.log(`Plotting ${csvName} at (${x} -> ${canvasX}, ${y} -> ${canvasY}) with color ${color}`);
+                ctx.fillStyle = color;
+                ctx.font = '20px Arial';
+                ctx.fillText(plotCharacter(csvName), canvasX, canvasY);
+                ctx.font = '10px Arial';
+                ctx.fillText(csvDate, canvasX + 5, canvasY + 5);
             });
         }
 
@@ -236,7 +236,7 @@
             resizeCanvas();
             drawCoordinateSystem();
             plotHistoricalCoordinates();
-	}
+        }
 
         window.addEventListener('resize', resizeHandler);
         window.addEventListener('load', resizeHandler);
