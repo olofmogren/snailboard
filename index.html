@@ -191,8 +191,8 @@
                 let [csvDate, csvName, x, y] = tuple;
                 let canvas_width = canvas.width/window.devicePixelRatio; //canvas.width/height is not css pixels, but physical pixels on firefox and chrome
                 let canvas_height = canvas.height/window.devicePixelRatio; //canvas.width/height is not css pixels, but physical pixels on firefox and chrome
-                let canvasX = (parseFloat(x) + 1) * canvas_width / 2-markerSize/2;
-                let canvasY = (1 - parseFloat(y)) * canvas_height / 2+markerSize/2;
+                let canvasX = (parseFloat(x) + 1) * canvas_width / 2-markerSize*0.4;
+                let canvasY = (1 - parseFloat(y)) * canvas_height / 2+markerSize*0.3;
                 //color = alphabetColors[csvName[0].toLowerCase()];
                 color = oldColor;
                 if (isToday(csvDate)){
@@ -225,14 +225,14 @@
             //color = alphabetColors[userName[0].toLowerCase()];
             color = newColor;
             ctx.fillStyle = color;
-            ctx.font = '20px Arial';
+            ctx.font = markerSize+'px Arial';
 
-            plotX = x-markerSize/2;
-            plotY = y+markerSize/2;
+            plotX = x-markerSize*0.4;
+            plotY = y+markerSize*0.3;
 
             console.log(`Plotting ${userName} at (${currentX} -> ${plotX}, ${currentY} -> ${plotY}) with color ${color}`);
             ctx.fillText(plotCharacter(userName), plotX, plotY);
-            ctx.font = '10px Arial';
+            ctx.font = subscriptSize+'px Arial';
             ctx.fillText("TODAY", plotX + 5, plotY + 5);
             currentX = currentX.toFixed(3);
             currentY = currentY.toFixed(3);
