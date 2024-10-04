@@ -48,18 +48,21 @@
 <body>
     <div class="container">
             <canvas id="snailMap"></canvas>
-            <img id="snail" class="icon" src="snail.png" width="48" height="48" alt="Snail">
-            <img id="lightning" class="icon" src="lightning.png" width="48" height="48" alt="Lightning Bolt">
-            <img id="island" class="icon" src="island.png" width="48" height="48" alt="Island">
-            <img id="scream" class="icon" src="scream.png" width="48" height="48" alt="The Scream">
+            <img id="snail" class="icon" src="snail.png" width="50" height="50" alt="Snail">
+            <img id="lightning" class="icon" src="lightning.png" width="50" height="50" alt="Lightning Bolt">
+            <img id="island" class="icon" src="island.png" width="50" height="50" alt="Island">
+            <img id="scream" class="icon" src="scream.png" width="50" height="50" alt="The Scream">
     </div>
     <script>
         let canvas = document.getElementById('snailMap');
         let ctx = canvas.getContext('2d');
         let currentX = null;
-
         let currentY = null;
         let historicalCoordinates = [];
+
+        let imageSize = 50;
+        let markerSize = 20;
+        let subscriptSize = 10;
         //let userColors = {};
         //if (!userColors[name[0]]) {
         //  userColors[name[0]] = '#' + Math.floor(Math.random()*16777215).toString(16);
@@ -187,9 +190,9 @@
                 color = alphabetColors[csvName[0].toLowerCase()];
                 console.log(`Plotting ${csvName} at (${x} -> ${canvasX}, ${y} -> ${canvasY}) with color ${color}`);
                 ctx.fillStyle = color;
-                ctx.font = '20px Arial';
+                ctx.font = markerSize+'px Arial';
                 ctx.fillText(plotCharacter(csvName), canvasX, canvasY);
-                ctx.font = '10px Arial';
+                ctx.font = subscriptSize+'px Arial';
                 if (isToday(csvDate)){
                     csvDate = "TODAY";
                 }
@@ -238,6 +241,18 @@
             canvas.style.height = container.clientHeight + 'px';
             const ctx = canvas.getContext('2d');
             ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            markerSize = container.clientWidth/40;
+		console.log("markerSize",markerSize);
+            subscriptSize = container.clientWidth/80;
+            imageSize = container.clientWidth/20;
+            document.getElementById('snail').style.height = imageSize+"px";
+            document.getElementById('snail').style.width = imageSize+"px";
+            document.getElementById('scream').style.height = imageSize+"px";
+            document.getElementById('scream').style.width = imageSize+"px";
+            document.getElementById('lightning').style.height = imageSize+"px";
+            document.getElementById('lightning').style.width = imageSize+"px";
+            document.getElementById('island').style.height = imageSize+"px";
+            document.getElementById('island').style.width = imageSize+"px";
         }
 
         function resizeHandler() {
