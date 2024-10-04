@@ -63,6 +63,14 @@
         let imageSize = 50;
         let markerSize = 20;
         let subscriptSize = 10;
+
+        let interval = null;
+        let timeout = null;
+
+        const frequentInterval = 2000;
+        const infrequentInterval = 60000;
+        const frequentTimeout = 60000;
+
         //let userColors = {};
         //if (!userColors[name[0]]) {
         //  userColors[name[0]] = '#' + Math.floor(Math.random()*16777215).toString(16);
@@ -81,6 +89,8 @@
         alphabet.forEach((letter, index) => {
           alphabetColors[letter] = colors[index];
         });
+        const newColor = "#000000";
+        const oldColor = "#999999"
 
         function checkUsername(userName) {
         return validUsernames.includes(userName.toLowerCase());
@@ -113,9 +123,7 @@
         }
 
         function fetchHistoricalCoordinates(drawCoordinateSys) {
-            //console.log("fetchHistoricalCoordinates()");
             historicalCoordinates = [];
-		console.log(historicalCoordinates);
             fetch('https://toad.se/snailboard/history.csv', {cache: "reload"})
                 .then(response => response.text())
                 .then(data => {
@@ -126,9 +134,7 @@
                             historicalCoordinates.push(tuple);
                         }
                     });
-		console.log(historicalCoordinates);
                     historicalCoordinates = getRecentHistoricalCoordinates();
-		console.log(historicalCoordinates);
                     if (drawCoordinateSys){
                         drawCoordinateSystem();
                     }
@@ -185,28 +191,30 @@
                 let [csvDate, csvName, x, y] = tuple;
                 let canvas_width = canvas.width/window.devicePixelRatio; //canvas.width/height is not css pixels, but physical pixels on firefox and chrome
                 let canvas_height = canvas.height/window.devicePixelRatio; //canvas.width/height is not css pixels, but physical pixels on firefox and chrome
-                let canvasX = (parseFloat(x) + 1) * canvas_width / 2;
-                let canvasY = (1 - parseFloat(y)) * canvas_height / 2;
-                color = alphabetColors[csvName[0].toLowerCase()];
+                let canvasX = (parseFloat(x) + 1) * canvas_width / 2-markerSize/2;
+                let canvasY = (1 - parseFloat(y)) * canvas_height / 2+markerSize/2;
+                //color = alphabetColors[csvName[0].toLowerCase()];
+                color = oldColor;
+                if (isToday(csvDate)){
+                    csvDate = "TODAY";
+                    color = newColor;
+                }
                 console.log(`Plotting ${csvName} at (${x} -> ${canvasX}, ${y} -> ${canvasY}) with color ${color}`);
                 ctx.fillStyle = color;
                 ctx.font = markerSize+'px Arial';
                 ctx.fillText(plotCharacter(csvName), canvasX, canvasY);
                 ctx.font = subscriptSize+'px Arial';
-                if (isToday(csvDate)){
-                    csvDate = "TODAY";
-                }
                 ctx.fillText(csvDate, canvasX + 5, canvasY + 5);
             });
         }
 
         canvas.addEventListener('click', function(event) {
             let rect = canvas.getBoundingClientRect();
-            console.log("canvas bounding client rect",rect);
-            console.log("event x,y:", event.clientX, event.clientY);
+            //console.log("canvas bounding client rect",rect);
+            //console.log("event x,y:", event.clientX, event.clientY);
             let canvas_width = canvas.width/window.devicePixelRatio; //canvas.width/height is not css pixels, but physical pixels on firefox and chrome
             let canvas_height = canvas.height/window.devicePixelRatio; //canvas.width/height is not css pixels, but physical pixels on firefox and chrome
-            console.log("canvas width, height:", canvas.width, canvas.height);
+            //console.log("canvas width, height:", canvas.width, canvas.height);
             let x = event.clientX - rect.left;
             let y = event.clientY - rect.top;
             currentX = (x / canvas_width) * 2 - 1;
@@ -214,17 +222,25 @@
             drawCoordinateSystem();
             plotHistoricalCoordinates();
             //ctx.fillStyle = 'black';
-            color = alphabetColors[userName[0].toLowerCase()];
+            //color = alphabetColors[userName[0].toLowerCase()];
+            color = newColor;
             ctx.fillStyle = color;
             ctx.font = '20px Arial';
-            console.log(`Plotting ${userName} at (${currentX} -> ${x}, ${currentY} -> ${y}) with color ${color}`);
-            ctx.fillText(plotCharacter(userName), x, y);
+
+            plotX = x-markerSize/2;
+            plotY = y+markerSize/2;
+
+            console.log(`Plotting ${userName} at (${currentX} -> ${plotX}, ${currentY} -> ${plotY}) with color ${color}`);
+            ctx.fillText(plotCharacter(userName), plotX, plotY);
             ctx.font = '10px Arial';
-            ctx.fillText("TODAY", x + 5, y + 5);
+            ctx.fillText("TODAY", plotX + 5, plotY + 5);
             currentX = currentX.toFixed(3);
             currentY = currentY.toFixed(3);
             console.log(`https://toad.se/snailboard/backend.php?name=${userName}&x=${currentX}&y=${currentY}`);
             fetch(`https://toad.se/snailboard/backend.php?name=${userName}&x=${currentX}&y=${currentY}`);
+            setHighInterval();
+            clearTimeout(timeout);
+            timeout = setTimeout(lowerInterval, frequentTimeout);
         });
 
         drawCoordinateSystem();
@@ -234,15 +250,15 @@
             const canvas = document.getElementById('snailMap');
             const container = canvas.parentElement;
             canvas.width = container.clientWidth * window.devicePixelRatio;
-            console.log("device pixel ratio", window.devicePixelRatio);
+            //console.log("device pixel ratio", window.devicePixelRatio);
             canvas.height = container.clientHeight * window.devicePixelRatio;
-            console.log("canvas width, height:", canvas.width, canvas.height);
+            //console.log("canvas width, height:", canvas.width, canvas.height);
             canvas.style.width = container.clientWidth + 'px';
             canvas.style.height = container.clientHeight + 'px';
             const ctx = canvas.getContext('2d');
             ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
             markerSize = container.clientWidth/40;
-		console.log("markerSize",markerSize);
+		//console.log("markerSize",markerSize);
             subscriptSize = container.clientWidth/80;
             imageSize = container.clientWidth/20;
             document.getElementById('snail').style.height = imageSize+"px";
@@ -253,6 +269,9 @@
             document.getElementById('lightning').style.width = imageSize+"px";
             document.getElementById('island').style.height = imageSize+"px";
             document.getElementById('island').style.width = imageSize+"px";
+            setHighInterval();
+            clearTimeout(timeout);
+            timeout = setTimeout(lowerInterval, frequentTimeout);
         }
 
         function resizeHandler() {
@@ -264,10 +283,23 @@
         window.addEventListener('resize', resizeHandler);
         window.addEventListener('load', resizeHandler);
 
+        function setHighInterval(){
+            console.log("increasing update interval due to activity");
+            clearInterval(interval);
+            interval = setInterval(checkForChanges, frequentInterval);
+        }
+        function lowerInterval(){
+            console.log("lowering update interval due to inactivity");
+            clearInterval(interval);
+            interval = setInterval(checkForChanges, infrequentInterval);
+        }
         function checkForChanges(){
             fetchHistoricalCoordinates(true);
 	}
-        setInterval(checkForChanges, 2500);
+
+        interval = setInterval(checkForChanges, frequentInterval);
+        clearTimeout(timeout)
+        timeout = setTimeout(lowerInterval, frequentTimeout);
 
     </script>
 </body>
