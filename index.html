@@ -58,6 +58,7 @@
         let ctx = canvas.getContext('2d');
         let currentX = null;
         let currentY = null;
+        let localCoordinatesAreSynced = false;
         let historicalCoordinates = [];
 
         let imageSize = 50;
@@ -122,7 +123,7 @@
             ctx.stroke();
         }
 
-        function fetchHistoricalCoordinates(drawCoordinateSys) {
+        function fetchHistoricalCoordinates() {
             historicalCoordinates = [];
             fetch('https://toad.se/snailboard/history.csv', {cache: "reload"})
                 .then(response => response.text())
@@ -135,15 +136,13 @@
                         }
                     });
                     historicalCoordinates = getRecentHistoricalCoordinates();
-                    if (drawCoordinateSys){
-                        drawCoordinateSystem();
-                    }
+                    drawCoordinateSystem();
                     plotHistoricalCoordinates();
                 });
         }
         function getRecentHistoricalCoordinates(){
             // Step 1: Sort the array by date in descending order
-            historicalCoordinates.sort((a, b) => new Date(b[0]) - new Date(a[0]));
+            historicalCoordinates.sort((a, b) => Date.parse(b[0]) - Date.parse(a[0]));
 
             // Step 2: Filter the array to retain only the tuple with the highest date for each name, plus the current date, if it exists
             const recentCoordinates = [];
@@ -164,11 +163,11 @@
             return recentCoordinates;               
         }
         function isToday(date) {
-        const d = new Date(date);
-            const today = new Date();
-            return d.getDate() === today.getDate() &&
-                d.getMonth() === today.getMonth() &&
-                d.getFullYear() === today.getFullYear();
+            const d = new Date(Date.parse(date));
+            const td = new Date();
+            return d.getDate() === td.getDate() &&
+                d.getMonth() === td.getMonth() &&
+                d.getFullYear() === td.getFullYear();
         }
 
         function plotCharacter(name){
@@ -182,30 +181,43 @@
                 return name[0];
             }
         }
+        function plotPoint(name, pointDate, x, y){
+            color = oldColor;
+            if (isToday(pointDate)){
+                pointDate = "TODAY";
+                color = newColor;
+            }
+            let canvas_width = canvas.width/window.devicePixelRatio; //canvas.width/height is not css pixels, but physical pixels on firefox and chrome
+            let canvas_height = canvas.height/window.devicePixelRatio; //canvas.width/height is not css pixels, but physical pixels on firefox and chrome
+            let canvasX = (parseFloat(x) + 1) * canvas_width / 2-markerSize*0.4;
+            let canvasY = (1 - parseFloat(y)) * canvas_height / 2+markerSize*0.3;
+            console.log(`Plotting ${name} at (${x} -> ${canvasX}, ${y} -> ${canvasY}) with color ${color}`);
+            ctx.fillStyle = color;
+            ctx.font = markerSize+'px Arial';
+            ctx.fillText(plotCharacter(name), canvasX, canvasY);
+            ctx.font = subscriptSize+'px Arial';
+            ctx.fillText(pointDate, canvasX + 5, canvasY + 5);
+        }
+
+        function today(){
+           const d = new Date();
+           return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2, '0')+"-"+String(d.getDate()).padStart(2, '0');
+        }
 
         function plotHistoricalCoordinates() {
             //console.log("plotHistoricalCoordinates()");
             //console.log(historicalCoordinates.length);
+            localCoordinatesAreSynced = false;
             historicalCoordinates.forEach(tuple => {
                 //console.log(tuple);
                 let [csvDate, csvName, x, y] = tuple;
-                let canvas_width = canvas.width/window.devicePixelRatio; //canvas.width/height is not css pixels, but physical pixels on firefox and chrome
-                let canvas_height = canvas.height/window.devicePixelRatio; //canvas.width/height is not css pixels, but physical pixels on firefox and chrome
-                let canvasX = (parseFloat(x) + 1) * canvas_width / 2-markerSize*0.4;
-                let canvasY = (1 - parseFloat(y)) * canvas_height / 2+markerSize*0.3;
-                //color = alphabetColors[csvName[0].toLowerCase()];
-                color = oldColor;
-                if (isToday(csvDate)){
-                    csvDate = "TODAY";
-                    color = newColor;
+                if (!(isToday(csvDate) && csvName == userName && currentX != null && currentY != null)){
+                  plotPoint(csvName, csvDate, x, y)
                 }
-                console.log(`Plotting ${csvName} at (${x} -> ${canvasX}, ${y} -> ${canvasY}) with color ${color}`);
-                ctx.fillStyle = color;
-                ctx.font = markerSize+'px Arial';
-                ctx.fillText(plotCharacter(csvName), canvasX, canvasY);
-                ctx.font = subscriptSize+'px Arial';
-                ctx.fillText(csvDate, canvasX + 5, canvasY + 5);
             });
+            if (currentX != null && currentY != null){
+                plotPoint(userName, today(), currentX, currentY);
+            }
         }
 
         canvas.addEventListener('click', function(event) {
@@ -221,30 +233,19 @@
             currentY = 1 - (y / canvas_height) * 2;
             drawCoordinateSystem();
             plotHistoricalCoordinates();
-            //ctx.fillStyle = 'black';
-            //color = alphabetColors[userName[0].toLowerCase()];
-            color = newColor;
-            ctx.fillStyle = color;
-            ctx.font = markerSize+'px Arial';
+            plotPoint(userName, today(), currentX, currentY);
 
-            plotX = x-markerSize*0.4;
-            plotY = y+markerSize*0.3;
-
-            console.log(`Plotting ${userName} at (${currentX} -> ${plotX}, ${currentY} -> ${plotY}) with color ${color}`);
-            ctx.fillText(plotCharacter(userName), plotX, plotY);
-            ctx.font = subscriptSize+'px Arial';
-            ctx.fillText("TODAY", plotX + 5, plotY + 5);
             currentX = currentX.toFixed(3);
             currentY = currentY.toFixed(3);
             console.log(`https://toad.se/snailboard/backend.php?name=${userName}&x=${currentX}&y=${currentY}`);
             fetch(`https://toad.se/snailboard/backend.php?name=${userName}&x=${currentX}&y=${currentY}`);
             setHighInterval();
             clearTimeout(timeout);
-            timeout = setTimeout(lowerInterval, frequentTimeout);
+            timeout = setTimeout(makeIntervalLessFrequent, frequentTimeout);
+            fetchHistoricalCoordinates();
         });
 
-        drawCoordinateSystem();
-        fetchHistoricalCoordinates(false);
+        fetchHistoricalCoordinates();
 
         function resizeCanvas() {
             const canvas = document.getElementById('snailMap');
@@ -271,7 +272,7 @@
             document.getElementById('island').style.width = imageSize+"px";
             setHighInterval();
             clearTimeout(timeout);
-            timeout = setTimeout(lowerInterval, frequentTimeout);
+            timeout = setTimeout(makeIntervalLessFrequent, frequentTimeout);
         }
 
         function resizeHandler() {
@@ -288,18 +289,18 @@
             clearInterval(interval);
             interval = setInterval(checkForChanges, frequentInterval);
         }
-        function lowerInterval(){
+        function makeIntervalLessFrequent(){
             console.log("lowering update interval due to inactivity");
             clearInterval(interval);
             interval = setInterval(checkForChanges, infrequentInterval);
         }
         function checkForChanges(){
-            fetchHistoricalCoordinates(true);
+            fetchHistoricalCoordinates();
 	}
 
         interval = setInterval(checkForChanges, frequentInterval);
         clearTimeout(timeout)
-        timeout = setTimeout(lowerInterval, frequentTimeout);
+        timeout = setTimeout(makeIntervalLessFrequent, frequentTimeout);
 
     </script>
 </body>
