@@ -203,26 +203,104 @@
             ctx.font = subscriptSize+'px Arial';
             ctx.fillText(pointDate, canvasX + 5, canvasY + 5);
         }
+function plotArrow(x1, y1, x2, y2) {
+    // Transform logical coordinates to canvas coordinates
+    let canvas_width = canvas.width / window.devicePixelRatio;
+    let canvas_height = canvas.height / window.devicePixelRatio;
+
+    let canvasX1 = (parseFloat(x1) + 1) * canvas_width / 2;
+    let canvasY1 = (1 - parseFloat(y1)) * canvas_height / 2;
+
+    let canvasX2 = (parseFloat(x2) + 1) * canvas_width / 2;
+    let canvasY2 = (1 - parseFloat(y2)) * canvas_height / 2;
+
+    // Set arrow styles
+    ctx.strokeStyle = arrowColor; // Use a defined arrow color
+    ctx.lineWidth = arrowWidth; // Use a defined arrow width
+
+    // Draw the arrow line
+    ctx.beginPath();
+    ctx.moveTo(canvasX1, canvasY1);
+    ctx.lineTo(canvasX2, canvasY2);
+    ctx.stroke();
+
+    // Calculate the direction of the arrowhead
+    let angle = Math.atan2(canvasY2 - canvasY1, canvasX2 - canvasX1);
+
+    // Arrowhead dimensions
+    let arrowHeadLength = 10; // Length of the arrowhead lines
+    let arrowHeadAngle = Math.PI / 6; // 30 degrees for the arrowhead
+
+    // Calculate the two lines forming the arrowhead
+    let arrowX1 = canvasX2 - arrowHeadLength * Math.cos(angle - arrowHeadAngle);
+    let arrowY1 = canvasY2 - arrowHeadLength * Math.sin(angle - arrowHeadAngle);
+
+    let arrowX2 = canvasX2 - arrowHeadLength * Math.cos(angle + arrowHeadAngle);
+    let arrowY2 = canvasY2 - arrowHeadLength * Math.sin(angle + arrowHeadAngle);
+
+    // Draw the arrowhead
+    ctx.beginPath();
+    ctx.moveTo(canvasX2, canvasY2);
+    ctx.lineTo(arrowX1, arrowY1);
+    ctx.lineTo(arrowX2, arrowY2);
+    ctx.lineTo(canvasX2, canvasY2);
+    ctx.fillStyle = arrowColor;
+    ctx.fill();
+}
 
         function today(){
            const d = new Date();
            return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2, '0')+"-"+String(d.getDate()).padStart(2, '0');
         }
 
-        function plotHistoricalCoordinates(animate) {
-            localCoordinatesAreSynced = false;
-            historicalCoordinates.forEach(tuple => {
-                //console.log(tuple);
-                let [csvDate, csvName, x, y] = tuple;
-                if (!(isToday(csvDate) && csvName == userName && currentX != null && currentY != null)){
-                  plotPoint(csvName, csvDate, x, y)
-                }
-            });
-            if (currentX != null && currentY != null){
-                plotPoint(userName, today(), currentX, currentY);
+async function plotHistoricalCoordinates(animate) {
+    localCoordinatesAreSynced = false;
+
+    // Group coordinates by csvName
+    let groupedCoordinates = {};
+    historicalCoordinates.forEach(tuple => {
+        let [csvDate, csvName, x, y] = tuple;
+        if (!groupedCoordinates[csvName]) {
+            groupedCoordinates[csvName] = [];
+        }
+        groupedCoordinates[csvName].push({ csvDate, x, y });
+    });
+
+    if (animate) {
+        // Iterate through each group of coordinates
+        for (let csvName in groupedCoordinates) {
+            let coordinates = groupedCoordinates[csvName];
+
+            // Loop through pairs of points for the current user
+            for (let i = 0; i < coordinates.length - 1; i++) {
+                let { csvDate: date1, x: x1, y: y1 } = coordinates[i];
+                let { csvDate: date2, x: x2, y: y2 } = coordinates[i + 1];
+
+                // Plot the first point
+                plotPoint(csvName, date1, x1, y1);
+
+                // Plot the second point and draw an arrow
+                plotPoint(csvName, date2, x2, y2);
+                plotArrow(x1, y1, x2, y2);
+
+                // Pause for 1 second before showing the next pair
+                await new Promise(resolve => setTimeout(resolve, 1000));
             }
         }
+    } else {
+        // If not animating, plot all points grouped by user
+        for (let csvName in groupedCoordinates) {
+            groupedCoordinates[csvName].forEach(({ csvDate, x, y }) => {
+                plotPoint(csvName, csvDate, x, y);
+            });
+        }
+    }
 
+    // Plot the current point if available
+    if (currentX != null && currentY != null) {
+        plotPoint(userName, today(), currentX, currentY);
+    }
+}
         canvas.addEventListener('click', function(event) {
             let rect = canvas.getBoundingClientRect();
             //console.log("canvas bounding client rect",rect);
