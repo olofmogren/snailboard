@@ -92,12 +92,15 @@
         const newColor = "#000000";
         const oldColor = "#999999"
 
+        userName = getCookie('userName');
+
         function checkUsername(userName) {
-        return validUsernames.includes(userName.toLowerCase());
+            return validUsernames.includes(userName.toLowerCase());
         }
 
-        let userName = prompt("Please enter your name:");
-        //let userName = "Olof"
+        if (typeof userName == 'undefined' || !checkUsername(userName)){
+          let userName = prompt("Please enter your name:");
+        }
 
         while (!checkUsername(userName)){
             userName = prompt("Name not found. Please enter a valid name:");
@@ -105,6 +108,8 @@
 
         //normalize usernames so that they have capital first letter.
         userName = userName[0].toUpperCase()+userName.substring(1).toLowerCase();
+
+        setCookie('userName', userName, 30); // Save the name for 30 days
 
         function drawCoordinateSystem() {
             let canvas_width = canvas.width/window.devicePixelRatio; //canvas.width/height is not css pixels, but physical pixels on firefox and chrome
@@ -295,7 +300,28 @@
         }
         function checkForChanges(){
             fetchHistoricalCoordinates(true);
-	}
+        }
+
+
+        function setCookie(name, value, days) {
+            const date = new Date();
+            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000)); // Cookie expiration in days
+            const expires = "expires=" + date.toUTCString();
+            document.cookie = name + "=" + encodeURIComponent(value) + ";" + expires + ";path=/";
+        }
+
+        // Function to get a cookie value by name
+        function getCookie(name) {
+            const decodedCookies = decodeURIComponent(document.cookie);
+            const cookiesArray = decodedCookies.split(';');
+            for (let i = 0; i < cookiesArray.length; i++) {
+                let cookie = cookiesArray[i].trim();
+                if (cookie.indexOf(name + "=") === 0) {
+                    return cookie.substring(name.length + 1);
+                }
+            }
+            return null;
+        }
 
         interval = setInterval(checkForChanges, frequentInterval);
         clearTimeout(timeout)
