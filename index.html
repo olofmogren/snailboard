@@ -96,11 +96,13 @@
         userName = getCookie('userName');
 
         function checkUsername(userName) {
+            if(userName == null)
+		return false;
             return validUsernames.includes(userName.toLowerCase());
         }
 
-        if (typeof userName == 'undefined' || !checkUsername(userName)){
-          let userName = prompt("Please enter your name:");
+        if (userName == null || typeof userName == 'undefined' || !checkUsername(userName)){
+            userName = prompt("Please enter your name:");
         }
 
         while (!checkUsername(userName)){
